@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Scopa Lobby</title>
+  <script src="lobby.js"></script>
+</head>
+<body>
+  <h1>Scopa Lobby</h1>
+
+  <h2>Create New Game</h2>
+  <input type="text" id="newGameUsername" placeholder="Enter username...">
+  <button onclick="createGame(document.getElementById('newGameUsername').value)">Create Game</button>
+
+  <h2>Join Game</h2>
+  <input type="text" id="joinGameID" placeholder="Enter game ID...">
+  <input type="text" id="joinGameUsername" placeholder="Enter username...">
+  <button onclick="joinGame(document.getElementById('joinGameID').value, document.getElementById('joinGameUsername').value)">Join Game</button>
+
+  <h2>Available Games</h2>
+  <button onclick="showAvailableGames()">Get Available Games</button>
+  <br><br>
+  <div id="availableGames"></div>
+</body>
+</html>

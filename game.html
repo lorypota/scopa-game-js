@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Scopa Game</title>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
+  <script defer src="game.js"></script>
+</head>
+<body>
+  <h1>Scopa Game</h1>
+
+  <h2>Make a Move</h2>
+  <input type="text" id="move" placeholder="Enter move...">
+  <button onclick="makeMove(document.getElementById('move').value)">Make a Move</button>
+
+  <h2>Game's Last Move</h2>
+  <button onclick="getLastMove()">Get Last Move</button>
+
+  <h2>Game's Moves</h2>
+  <button onclick="getGameMoves()">Get Game Moves</button>
+
+  <div id="gamePanel">
+    <div id="comHand"></div>
+
+    <div id="board"></div>
+
+    <div id="player">
+        <h2 id="showName"></h2>
+        <div id="playerCards">
+          <button id="card1" disabled></button>
+          <button id="card2" disabled></button>
+          <button id="card3" disabled></button>
+        </div>
+    </div>
+  </div>
+</body>
+</html>

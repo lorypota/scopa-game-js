@@ -1,0 +1,20 @@
+// Funzione per ottenere la lista delle partite con N giocatori
+async function getGamesWithNPlayers(n) {
+  const response = await fetch(`https://classe5ID.altervista.org/games/partitaN/${n}`, {
+    headers: {
+      'Authorization': `Basic ${credentials}`
+    }
+  });
+  const gameList = await response.json();
+  console.log('Partite con', n, 'giocatori:', gameList);
+
+  showAvailableGames(n);
+
+  return gameList;
+}
+
+<h2>Games with N players</h2>
+<input type="text" id="gamesNPlayers" placeholder="Enter number of players...">
+<button onclick="getGamesWithNPlayers(document.getElementById('gamesNPlayers').value)">Get Available Games with N players</button>
+<br><br>
+<div id="availableGamesNPlayers"></div>
