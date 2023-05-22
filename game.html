@@ -7,29 +7,25 @@
 </head>
 <body>
   <h1>Scopa Game</h1>
-
-  <h2>Make a Move</h2>
-  <input type="text" id="move" placeholder="Enter move...">
-  <button onclick="makeMove(document.getElementById('move').value)">Make a Move</button>
-
-  <h2>Game's Last Move</h2>
-  <button onclick="getLastMove()">Get Last Move</button>
-
-  <h2>Game's Moves</h2>
-  <button onclick="getGameMoves()">Get Game Moves</button>
-
+  <h2 id="showName"></h2>
+  
   <div id="gamePanel">
-    <div id="comHand"></div>
+    <div id="theirHand">
+      <button id="theirCard1" disabled>X</button>
+      <button id="theirCard2" disabled>X</button>
+      <button id="theirCard3" disabled>X</button>
+    </div>
+
+    <br>
 
     <div id="board"></div>
 
+    <br>
+
     <div id="player">
-        <h2 id="showName"></h2>
-        <div id="playerCards">
-          <button id="card1" disabled></button>
-          <button id="card2" disabled></button>
-          <button id="card3" disabled></button>
-        </div>
+      <button class="card" id="card1" disabled></button>
+      <button class="card" id="card2" disabled></button>
+      <button class="card" id="card3" disabled></button>
     </div>
   </div>
 </body>

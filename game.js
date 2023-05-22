@@ -28,7 +28,7 @@ let deck;
 let moves;
 let board = [];
 let myCards = [];
-let theirNumCards = 0;
+let theirCardsNum;
 
 let firstPlayerInterval;
 let gameStateInterval;
@@ -117,14 +117,12 @@ async function startGame(){
   shuffleArray(deck, prng);
 
   console.log(deck);
-
-  /* setInterval(pollGameState, 5000); */
   
   if(playerId === null) {
     alert("player didn't join the match");
     window.location.href = `index.html`;
   } else if (playerId === 1) {
-    deck.splice(0, 4);
+    board = deck.splice(0, 4);
     firstPlayerInterval = setInterval(handleFirstPlayer, 3000);
   } else if(playerId === 2) {
     handleSecondPlayer();
@@ -140,7 +138,7 @@ async function pollGameState() {
     return;
   }
 
-  if(myCards.length === 0){
+  if(myCards.length === 0 && (moves.length - 4) % 6 === 0){
     drawCards();
   }
 
@@ -194,12 +192,14 @@ async function handleFirstPlayer(){
 }
 
 async function handleSecondPlayer(){
-  /* for(i = 0; i < 4; i++){
-    await makeMove(deck.shift());
-  } */
+  for(i = 0; i < 4; i++){
+    let startingCard = deck.shift();
+    board.push(startingCard);
+    await makeMove(startingCard);
+  }
 
   // DA TOGLIERE PER TESTAREEEEE
-  deck.splice(0, 4);
+ /*  deck.splice(0, 4); */
   // DA TOGLIERE PER TESTAREEEEE
 
   movesNumber = 4;
@@ -226,32 +226,57 @@ function takeNCards(n){
 }
 
 async function loadGamePanel(){
-  loadComHand();
+  loadTheirHand();
   loadBoard();
   loadPlayerCards();
 }
 
-async function loadComHand(){
-  /* document.getElementById("comHand").innerHTML = deck */
+async function loadTheirHand(){
+  if(playerId === 1){
+    if(moves.length % 2 === 0){
+      theirCardsNum = myCards.length
+    } else {
+      theirCardsNum = myCards.length + 1
+    }
+  } else {
+    if(moves.length % 2 === 0){
+      theirCardsNum = myCards.length
+    } else {
+      theirCardsNum = myCards.length - 1
+    }
+  }
+
+  for(i = 0; i < theirCardsNum; i++) {
+    $(`#theirCard${i + 1}`).show();
+  }
+
+  for(i = theirCardsNum; i < 3; i++) {
+    $(`#theirCard${i + 1}`).hide();
+  }
 }
 
 async function loadBoard(){
-  console.log(moves);
-  console.log(deck.length);
-  /* document.getElementById("board").innerHTML = moves.join(", "); */
+  console.log(board);
+  $(`#board`).html(board.join(" "));
 }
 
 async function loadPlayerCards(){
   for(i = 0; i < myCards.length; i++) {
     $(`#card${i + 1}`).html(myCards[i]);
+    $(`#card${i + 1}`).show();
   }
 
   for(i = myCards.length; i < 3; i++) {
-    $(`#card${i + 1}`).html("");
+    $(`#card${i + 1}`).hide();
   }
 }
 
 function makeMoveAndRemove(move){
   makeMove(move);
   myCards = myCards.filter(item => item !== move);
+  disableControls();
 }
+
+$('.card').click(function() {
+  $(this).hide();
+});
