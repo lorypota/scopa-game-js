@@ -29,6 +29,9 @@ let moves;
 let board = [];
 let myCards = [];
 let theirCardsNum;
+let savedCards = [];
+let lastMove;
+let totalMoves = 4;
 
 let firstPlayerInterval;
 let gameStateInterval;
@@ -86,9 +89,9 @@ async function getLastMove() {
       'Authorization': `Basic ${credentials}`
     }
   });
-  const lastMove = await response.text();
-  console.log('Ultima mossa:', lastMove);
-  return lastMove;
+  const temp = await response.json();
+
+  lastMove = Number(temp.data.play.MOSSA);
 }
 
 // Funzione per ottenere le mosse di una partita
@@ -112,7 +115,7 @@ function shuffleArray(array, prng) {
 async function startGame(){
   await savePlayerId();
   document.getElementById("showName").innerHTML = "Giocatore n." + playerId +"<br> Username: " + username;
-  deck = Array.from({length: 40}, (_, i) => i + 1);
+  deck = Array.from({length: 40}, (_, i) => i);
   prng = new PRNG(gameId);
   shuffleArray(deck, prng);
 
@@ -131,6 +134,15 @@ async function startGame(){
 
 async function pollGameState() {
   await getGameMoves();
+  await getLastMove();
+
+  console.log("moves: " + moves.length);
+  console.log("totalMoves: " + totalMoves);
+
+  if(moves.length > totalMoves){
+    totalMoves++;
+    addToBoard(lastMove);
+  }
 
   if(deck.length === 0){
     clearInterval(gameStateInterval);
@@ -147,6 +159,7 @@ async function pollGameState() {
   if (playerId === 1) { //player 1
 
     if(moves.length % 2 === 0) {
+      
       enableControls();
     } else {
       disableControls();
@@ -155,6 +168,7 @@ async function pollGameState() {
   } else {  //player 2
 
     if(moves.length % 2 === 1) {
+
       enableControls();
     } else {
       disableControls();
@@ -175,9 +189,9 @@ function disableControls() {
   $('#card3').prop('disabled', true);
 }
 
-$('#card1').on('click', () => makeMoveAndRemove(myCards[0]));
-$('#card2').on('click', () => makeMoveAndRemove(myCards[1]));
-$('#card3').on('click', () => makeMoveAndRemove(myCards[2]));
+$('#card1').on('click', () => executePlayerMove(myCards[0]));
+$('#card2').on('click', () => executePlayerMove(myCards[1]));
+$('#card3').on('click', () => executePlayerMove(myCards[2]));
 
 async function handleFirstPlayer(){
   await getGameMoves();
@@ -197,10 +211,6 @@ async function handleSecondPlayer(){
     board.push(startingCard);
     await makeMove(startingCard);
   }
-
-  // DA TOGLIERE PER TESTAREEEEE
- /*  deck.splice(0, 4); */
-  // DA TOGLIERE PER TESTAREEEEE
 
   movesNumber = 4;
 
@@ -247,6 +257,7 @@ async function loadTheirHand(){
   }
 
   for(i = 0; i < theirCardsNum; i++) {
+    $(`#theirCard${i + 1}`).html('<img src="bergamoCards/retro.png" alt="Card Back Image" />');
     $(`#theirCard${i + 1}`).show();
   }
 
@@ -256,13 +267,18 @@ async function loadTheirHand(){
 }
 
 async function loadBoard(){
-  console.log(board);
-  $(`#board`).html(board.join(" "));
+  let html = '';
+  for(let card of board) {
+    html += `<img src="bergamoCards/${card}.png" alt="Card Image" /> `;
+  }
+  $('#board').html(html);
+
+  console.log("board values: " + board.map(x => x % 10 + 1).join(", "));
 }
 
 async function loadPlayerCards(){
   for(i = 0; i < myCards.length; i++) {
-    $(`#card${i + 1}`).html(myCards[i]);
+    $(`#card${i + 1}`).html(`<img src="bergamoCards/${myCards[i]}.png" alt="Card Image" />`);
     $(`#card${i + 1}`).show();
   }
 
@@ -271,12 +287,122 @@ async function loadPlayerCards(){
   }
 }
 
-function makeMoveAndRemove(move){
+function executePlayerMove(move){
   makeMove(move);
   myCards = myCards.filter(item => item !== move);
   disableControls();
+
+  addToBoard(move);
+
+  totalMoves++;
 }
 
 $('.card').click(function() {
   $(this).hide();
 });
+
+function addToBoard(move, me = true){
+  let valoreMyCard = move % 10; //valore della mia carta senza segno
+  
+  if(me){
+    savedCards.push(move);
+  }
+
+  //gestisco caso carta uguale
+  let selectedBoardCard = undefined;
+  for(i = 0; i < board.length; i++){
+    let valoreCardBoard = board[i] % 10; //valore della carta in banco senza segno
+    if(valoreCardBoard === valoreMyCard){
+      if(board[i] <= 9){ //caso in cui carta sia di ori
+        removeAndSaveCard(board[i]);
+        return;
+      } else {
+        selectedBoardCard = board[i];
+      }
+    }
+  }
+
+  if(selectedBoardCard !== undefined) {
+    removeAndSaveCard(selectedBoardCard);
+    return;
+  }
+
+  //gestisco caso asso
+  if(valoreMyCard === 0){
+    putsDownAce();
+    return;
+  }
+
+  //gestisco caso somma di carte
+  let notHandled = handlesSum(valoreMyCard);
+
+  //gestisco caso in cui nessuna carta combacia
+  if(notHandled){
+    board.push(move);
+    console.log(board);
+  }
+}
+
+function removeAndSaveCard(boardCard){
+  savedCards.push(boardCard);
+  board = board.filter(item => item !== boardCard);
+}
+
+function putsDownAce(){
+  while (board.length) {
+    savedCards.push(board.pop());
+  }
+}
+
+function handlesSum(valoreMyCard){
+  let boardValues = board.map(number => number % 10);
+
+  let incrementedArray = boardValues.map(x => x + 1);
+  let arrayTakeableCards = sumSubsets((valoreMyCard + 1), incrementedArray);
+
+  let randomTakeableCards = undefined;
+  if(arrayTakeableCards.length === 0){
+    return true;
+  } else if(arrayTakeableCards.length === 1){
+    randomTakeableCards = arrayTakeableCards[0].map(x => x - 1);
+  } else {
+    randomTakeableCards = arrayTakeableCards[Math.floor(Math.random() * arrayTakeableCards.length)].map(x => x - 1);
+  }
+
+  console.log("Valore my card: " + (valoreMyCard + 1))
+  console.log("Array takeable cards: " + arrayTakeableCards.join(", "));
+  console.log("Selected array: " + randomTakeableCards.join(", "));
+  console.log("Board values: " + boardValues.join(", "));
+  console.log("Board: " + board);
+
+  for(i = 0; i < randomTakeableCards.length; i++){
+    for(let j = 0; j < board.length; j++) {
+      if(board[j] % 10 === randomTakeableCards[i]){
+        board.splice(j, 1);
+        break;
+      }
+    }
+  }
+}
+
+function sumSubsets(target, numbers, subset = [], index = 0){
+
+  var result = [];
+
+  if(target === 0){
+    return [subset];
+  }
+
+  for(let i = index; i < numbers.length; i++){
+    if(numbers[i] > target) {
+      continue;
+    }
+
+    var newSubset = subset.concat(numbers[i]);
+    var newResult = sumSubsets(target - numbers[i], numbers, newSubset, i + 1);
+
+    result = result.concat(newResult);
+  }
+
+  return result;
+}
