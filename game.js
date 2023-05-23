@@ -29,9 +29,11 @@ let moves;
 let board = [];
 let myCards = [];
 let theirCardsNum;
-let savedCards = [];
 let lastMove;
 let totalMoves = 4;
+
+let savedCards = [];
+let numScope = 0;
 
 let firstPlayerInterval;
 let gameStateInterval;
@@ -136,17 +138,14 @@ async function pollGameState() {
   await getGameMoves();
   await getLastMove();
 
-  console.log("moves: " + moves.length);
-  console.log("totalMoves: " + totalMoves);
-
   if(moves.length > totalMoves){
     totalMoves++;
     addToBoard(lastMove);
   }
 
-  if(deck.length === 0){
+  if(deck.length === 0 && myCards.length === 0 && theirCardsNum === 0){
     clearInterval(gameStateInterval);
-    //showResults();
+    showResults();
     return;
   }
 
@@ -159,7 +158,6 @@ async function pollGameState() {
   if (playerId === 1) { //player 1
 
     if(moves.length % 2 === 0) {
-      
       enableControls();
     } else {
       disableControls();
@@ -168,7 +166,6 @@ async function pollGameState() {
   } else {  //player 2
 
     if(moves.length % 2 === 1) {
-
       enableControls();
     } else {
       disableControls();
@@ -272,8 +269,6 @@ async function loadBoard(){
     html += `<img src="bergamoCards/${card}.png" alt="Card Image" /> `;
   }
   $('#board').html(html);
-
-  console.log("board values: " + board.map(x => x % 10 + 1).join(", "));
 }
 
 async function loadPlayerCards(){
@@ -285,6 +280,8 @@ async function loadPlayerCards(){
   for(i = myCards.length; i < 3; i++) {
     $(`#card${i + 1}`).hide();
   }
+
+  $(`#numScope`).html("Numero scope: " + numScope);
 }
 
 function executePlayerMove(move){
@@ -295,6 +292,12 @@ function executePlayerMove(move){
   addToBoard(move);
 
   totalMoves++;
+
+  if(move % 10 !== 0 && board.length === 0){
+    numScope++;
+  }
+
+  showResults();
 }
 
 $('.card').click(function() {
@@ -369,12 +372,6 @@ function handlesSum(valoreMyCard){
     randomTakeableCards = arrayTakeableCards[Math.floor(Math.random() * arrayTakeableCards.length)].map(x => x - 1);
   }
 
-  console.log("Valore my card: " + (valoreMyCard + 1))
-  console.log("Array takeable cards: " + arrayTakeableCards.join(", "));
-  console.log("Selected array: " + randomTakeableCards.join(", "));
-  console.log("Board values: " + boardValues.join(", "));
-  console.log("Board: " + board);
-
   for(i = 0; i < randomTakeableCards.length; i++){
     for(let j = 0; j < board.length; j++) {
       if(board[j] % 10 === randomTakeableCards[i]){
@@ -405,4 +402,66 @@ function sumSubsets(target, numbers, subset = [], index = 0){
   }
 
   return result;
+}
+
+function showResults(){
+  let numCarte = savedCards.length;
+  let numOri = 0; 
+  let numSette = 0;
+  let numSei = 0;
+  let setteBello;
+
+  for(i = 0; i < savedCards.length; i++){
+    if(savedCards[i] <= 9){
+      numOri++;
+    }
+
+    if(savedCards[i] % 10 === 6){
+      numSette++;
+    }
+
+    if(savedCards[i] % 10 === 5){
+      numSei++;
+    }
+
+    if(savedCards[i] === 6){
+      setteBello = true;
+    }
+  }
+
+  let primiera; //true se vince, false se perde
+
+  if(numSette > 2){
+    primiera = true;
+  } else if(numSette === 2){
+    
+    if(numSei > 2){
+      primiera = true;
+    } else if(numSei === 2){
+      primiera = undefined;
+    } else {
+      primiera = false;
+    }
+
+  } else {
+    primiera = false;
+  }
+
+  let numPunti = numScope;
+
+  if(numCarte >= 21)
+    numPunti++;
+
+  if(numOri >= 6)
+    numPunti++;
+
+  if(setteBello === true)
+    numPunti++;
+
+  if(primiera === true)
+    numPunti++;
+  
+ /*  $(`gamePanel`).hide(); */
+
+  $("risultato").html("Num Carte: " + numCarte + "<br>Num ori: " + numOri + "<br>Sette bello: " + setteBello + "<br>Primiera: " + primiera + "<br>Num punti: " + numPunti);
 }
