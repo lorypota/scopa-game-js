@@ -140,7 +140,7 @@ async function pollGameState() {
 
   if(moves.length > totalMoves){
     totalMoves++;
-    addToBoard(lastMove);
+    addToBoard(lastMove, false);
   }
 
   if(deck.length === 0 && myCards.length === 0 && theirCardsNum === 0){
@@ -314,7 +314,9 @@ function addToBoard(move, me = true){
     if(valoreCardBoard === valoreMyCard){
       if(board[i] <= 9){ //caso in cui carta sia di ori
         removeAndSaveCard(board[i]);
-        savedCards.push(move);
+        if(me){
+          savedCards.push(move);
+        }
         return;
       } else {
         selectedBoardCard = board[i];
@@ -324,14 +326,18 @@ function addToBoard(move, me = true){
 
   if(selectedBoardCard !== undefined) {
     removeAndSaveCard(selectedBoardCard);
-    savedCards.push(move);
+    if(me){
+      savedCards.push(move);
+    }
     return;
   }
 
   //gestisco caso asso
   if(valoreMyCard === 0){
     putsDownAce();
-    savedCards.push(move);
+    if(me){
+      savedCards.push(move);
+    }
     return;
   }
 
@@ -378,6 +384,7 @@ function handlesSum(valoreMyCard, move){
       }
     }
   }
+  console.log("sono qui");
   savedCards.push(move);
 }
 
@@ -460,7 +467,7 @@ function showResults(){
   if(primiera === true)
     numPunti++;
   
- /*  $(`gamePanel`).hide(); */
+  $(`gamePanel`).hide();
 
  console.log("Carte salvate: " + savedCards.map(x => x + 1).join(", "));
  console.log("Num Carte: " + numCarte) 
