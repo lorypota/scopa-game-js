@@ -13,38 +13,126 @@ class PRNG {
   }
 }
 
+// fetch API credentials
 const user = '4ID';
 const pass = 'Grena';
-const credentials = btoa(`${user}:${pass}`);  // codifica in base64 le credenziali
+const credentials = btoa(`${user}:${pass}`);
 
+// fetching URL parameters
 const urlParams = new URLSearchParams(window.location.search);
 const gameId = urlParams.get('gameId');
 const username = urlParams.get('username');
 
-let playerId;
-let prng;
+// game state
+let deck, moves, board = [], myCards = [], theirCardsNum = 0, lastMove, totalMoves = 4;
+let savedCards = [], numScope = 0, tookLast;
+let playerId, prng;
 
-let deck;
-let moves;
-let board = [];
-let myCards = [];
-let theirCardsNum;
-let lastMove;
-let totalMoves = 4;
+// UI elements
+const showNameEl = document.getElementById("showName");
 
-let savedCards = [];
-let numScope = 0;
+// intervals
+let firstPlayerInterval, gameStateInterval;
 
-let firstPlayerInterval;
-let gameStateInterval;
-
+//redirect if parameters are not provided
 if (gameId === null || username === null) {
   alert('Game ID or username not provided. Please join a game from the lobby.');
   window.location.href = 'index.html';  
 } else {
   console.log(`Game ID: ${gameId}, Username: ${username}`);
-
+  
   startGame();
+}
+
+
+
+async function startGame(){
+  try {
+    await savePlayerId();
+    showNameEl.innerHTML = "Giocatore n." + playerId +"<br> Username: " + username;
+  
+    initializeDeckAndBoard();
+    
+    if(playerId === null) {
+      alert("player didn't join the match");
+      window.location.href = `index.html`;
+    } else {
+      handlePlayerRoles();
+    }
+  } catch (err) {
+    console.error("Error starting game: ", err);
+  }
+}
+
+function initializeDeckAndBoard() {
+  deck = Array.from({length: 40}, (_, i) => i);
+  prng = new PRNG(gameId);
+  shuffleArray(deck, prng);
+  console.log(deck);
+}
+
+function shuffleArray(array, prng) {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(prng.nextFloat() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+}
+
+function handlePlayerRoles(){
+  if (playerId === 1) {
+    board = deck.splice(0, 4);
+    firstPlayerInterval = setInterval(handleFirstPlayer, 3000);
+  } else {
+    handleSecondPlayer();
+  }
+}
+
+async function pollGameState() {
+  //update game state
+  await getGameMoves();
+  await getLastMove();
+
+  console.log("mie: " + myCards.length + ", loro: " + theirCardsNum + ", rimanenti: " + deck.length);
+
+  if(moves.length > totalMoves){
+    totalMoves++;
+    addToBoard(lastMove, false);
+  }
+
+  if(moves.length != 40 && myCards.length === 0 && (moves.length - 4) % 6 === 0){
+    drawCards();
+  }
+
+  loadGamePanel();
+
+  if (playerId === 1) { //player 1
+
+    if(moves.length % 2 === 0) {
+      enableControls();
+    } else {
+      disableControls();
+    }
+
+  } else {  //player 2
+
+    if(moves.length % 2 === 1) {
+      enableControls();
+    } else {
+      disableControls();
+    }
+
+  }
+
+  if(moves.length === 40){
+    clearInterval(gameStateInterval);
+    if(tookLast){
+      while(board.length){
+        savedCards.push(board.pop());
+      }
+    }
+
+    showResults();
+  }
 }
 
 // Funzione per ottenere la lista delle partite disponibili
@@ -107,72 +195,6 @@ async function getGameMoves() {
   moves = temp.data.moves.map(item => parseInt(item.MOSSA));
 }
 
-function shuffleArray(array, prng) {
-  for (let i = array.length - 1; i > 0; i--) {
-    const j = Math.floor(prng.nextFloat() * (i + 1));
-    [array[i], array[j]] = [array[j], array[i]];
-  }
-}
-
-async function startGame(){
-  await savePlayerId();
-  document.getElementById("showName").innerHTML = "Giocatore n." + playerId +"<br> Username: " + username;
-  deck = Array.from({length: 40}, (_, i) => i);
-  prng = new PRNG(gameId);
-  shuffleArray(deck, prng);
-
-  console.log(deck);
-  
-  if(playerId === null) {
-    alert("player didn't join the match");
-    window.location.href = `index.html`;
-  } else if (playerId === 1) {
-    board = deck.splice(0, 4);
-    firstPlayerInterval = setInterval(handleFirstPlayer, 3000);
-  } else if(playerId === 2) {
-    handleSecondPlayer();
-  }
-}
-
-async function pollGameState() {
-  await getGameMoves();
-  await getLastMove();
-
-  if(moves.length > totalMoves){
-    totalMoves++;
-    addToBoard(lastMove, false);
-  }
-
-  if(deck.length === 0 && myCards.length === 0 && theirCardsNum === 0){
-    clearInterval(gameStateInterval);
-    showResults();
-    return;
-  }
-
-  if(myCards.length === 0 && (moves.length - 4) % 6 === 0){
-    drawCards();
-  }
-
-  loadGamePanel();
-
-  if (playerId === 1) { //player 1
-
-    if(moves.length % 2 === 0) {
-      enableControls();
-    } else {
-      disableControls();
-    }
-
-  } else {  //player 2
-
-    if(moves.length % 2 === 1) {
-      enableControls();
-    } else {
-      disableControls();
-    }
-
-  }
-}
 
 function enableControls() {
   $('#card1').prop('disabled', false);
@@ -240,7 +262,9 @@ async function loadGamePanel(){
 
 async function loadTheirHand(){
   if(playerId === 1){
-    if(moves.length % 2 === 0){
+    if(deck.length === 0 && myCards.length === 0) {
+      theirCardsNum = 0
+    } else if(moves.length % 2 === 0){
       theirCardsNum = myCards.length
     } else {
       theirCardsNum = myCards.length + 1
@@ -296,25 +320,29 @@ function executePlayerMove(move){
   if(move % 10 !== 0 && board.length === 0){
     numScope++;
   }
-
-  showResults();
 }
 
 $('.card').click(function() {
   $(this).hide();
 });
 
-function addToBoard(move, me = true){
-  let valoreMyCard = move % 10; //valore della mia carta senza segno
+function addToBoard(move, isPlayer = true){
+  let cardValue = move % 10; //valore della mia carta senza segno
+
+  if(isPlayer){
+    tookLast = true;
+  } else {
+    tookLast = false;
+  }
 
   //gestisco caso carta uguale
   let selectedBoardCard = undefined;
   for(i = 0; i < board.length; i++){
     let valoreCardBoard = board[i] % 10; //valore della carta in banco senza segno
-    if(valoreCardBoard === valoreMyCard){
+    if(valoreCardBoard === cardValue){
       if(board[i] <= 9){ //caso in cui carta sia di ori
-        removeAndSaveCard(board[i], me);
-        if(me){
+        removeAndSaveCard(board[i], isPlayer);
+        if(isPlayer){
           savedCards.push(move);
         }
         return;
@@ -325,24 +353,24 @@ function addToBoard(move, me = true){
   }
 
   if(selectedBoardCard !== undefined) {
-    removeAndSaveCard(selectedBoardCard, me);
-    if(me){
+    removeAndSaveCard(selectedBoardCard, isPlayer);
+    if(isPlayer){
       savedCards.push(move);
     }
     return;
   }
 
   //gestisco caso asso
-  if(valoreMyCard === 0){
-    putsDownAce(me);
-    if(me){
+  if(cardValue === 0){
+    putsDownAce(isPlayer);
+    if(isPlayer){
       savedCards.push(move);
     }
     return;
   }
 
   //gestisco caso somma di carte
-  let notHandled = handlesSum(valoreMyCard, move, me);
+  let notHandled = handlesSum(cardValue, move, isPlayer);
 
   //gestisco caso in cui nessuna carta combacia
   if(notHandled){
@@ -350,27 +378,26 @@ function addToBoard(move, me = true){
   }
 }
 
-function removeAndSaveCard(boardCard, me){
-  if(me){
+function removeAndSaveCard(boardCard, isPlayer){
+  if(isPlayer){
     savedCards.push(boardCard);
   }
   board = board.filter(item => item !== boardCard);
 }
 
-function putsDownAce(me){
+function putsDownAce(isPlayer){
   while (board.length) {
     let cardBoard = board.pop();
-    if(me){
+    if(isPlayer){
       savedCards.push(cardBoard);
     }
   }
 }
 
-function handlesSum(valoreMyCard, move, me){
+function handlesSum(cardValue, move, isPlayer){
   let boardValues = board.map(number => number % 10);
-
   let incrementedArray = boardValues.map(x => x + 1);
-  let arrayTakeableCards = sumSubsets((valoreMyCard + 1), incrementedArray);
+  let arrayTakeableCards = sumSubsets((cardValue + 1), incrementedArray);
 
   let randomTakeableCards = undefined;
   if(arrayTakeableCards.length === 0){
@@ -384,7 +411,7 @@ function handlesSum(valoreMyCard, move, me){
   for(i = 0; i < randomTakeableCards.length; i++){
     for(let j = 0; j < board.length; j++) {
       if(board[j] % 10 === randomTakeableCards[i]){
-        if(me){
+        if(isPlayer){
           savedCards.push(board[j]);
         }
         board.splice(j, 1);
@@ -392,7 +419,7 @@ function handlesSum(valoreMyCard, move, me){
       }
     }
   }
-  if(me){
+  if(isPlayer){
     savedCards.push(move);
   }
 }
@@ -420,6 +447,8 @@ function sumSubsets(target, numbers, subset = [], index = 0){
 }
 
 function showResults(){
+  let results = "";
+
   let numCarte = savedCards.length;
   let numOri = 0; 
   let numSette = 0;
@@ -476,12 +505,20 @@ function showResults(){
   if(primiera === true)
     numPunti++;
   
-  $(`gamePanel`).hide();
+  results += "Numero scope: " + numScope + "<br>";
+  results += "Num Carte: " + numCarte + "<br>";
+  results += "Num ori: " + numOri + "<br>";
+  results += "Sette bello: " + setteBello + "<br>";
+  results += "Primiera: " + primiera + "<br>";
+  results += "Punti totali: " + numPunti + "<br>";
 
- console.log("Carte salvate: " + savedCards.map(x => x + 1).join(", "));
- console.log("Num Carte: " + numCarte) 
- console.log("Num ori: " + numOri)
- console.log("Sette bello: " + setteBello)
- console.log("Primiera: " + primiera);
- console.log("num punti: " + numPunti);
+  /* console.log("Carte salvate: " + savedCards.map(x => x + 1).join(", "));
+  console.log("Num Carte: " + numCarte) 
+  console.log("Num ori: " + numOri)
+  console.log("Sette bello: " + setteBello)
+  console.log("Primiera: " + primiera);
+  console.log("num punti: " + numPunti); */
+
+  window.location.href = `finishedGame.html?results=${results}`;
+  return;
 }
