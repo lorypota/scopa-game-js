@@ -463,5 +463,5 @@ function showResults(){
   
  /*  $(`gamePanel`).hide(); */
 
-  $("risultato").html("Num Carte: " + numCarte + "<br>Num ori: " + numOri + "<br>Sette bello: " + setteBello + "<br>Primiera: " + primiera + "<br>Num punti: " + numPunti);
+ console.log("Num Carte: " + numCarte + "<br>Num ori: " + numOri + "<br>Sette bello: " + setteBello + "<br>Primiera: " + primiera + "<br>Num punti: " + numPunti);
 }
