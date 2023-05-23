@@ -342,7 +342,6 @@ function addToBoard(move, me = true){
   //gestisco caso in cui nessuna carta combacia
   if(notHandled){
     board.push(move);
-    console.log(board);
   }
 }
 
@@ -463,5 +462,9 @@ function showResults(){
   
  /*  $(`gamePanel`).hide(); */
 
- console.log("Num Carte: " + numCarte + "<br>Num ori: " + numOri + "<br>Sette bello: " + setteBello + "<br>Primiera: " + primiera + "<br>Num punti: " + numPunti);
+ console.log("Num Carte: " + numCarte) 
+ console.log("Num ori: " + numOri)
+ console.log("Sette bello: " + setteBello)
+ console.log("Primiera: " + primiera);
+ console.log("num punti: " + numPunti);
 }
