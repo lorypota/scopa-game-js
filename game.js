@@ -87,12 +87,36 @@ function handlePlayerRoles(){
   }
 }
 
+async function handleFirstPlayer(){
+  await getGameMoves();
+
+  if(moves !== undefined && moves.length >= 4){
+    clearInterval(firstPlayerInterval);
+    movesNumber = 4;
+
+    gameStateInterval = setInterval(pollGameState, 3000);
+  }
+
+}
+
+async function handleSecondPlayer(){
+  for(i = 0; i < 4; i++){
+    let startingCard = deck.shift();
+    board.push(startingCard);
+    await makeMove(startingCard);
+  }
+
+  movesNumber = 4;
+
+  await getGameMoves(); //probabilmente da togliere
+
+  gameStateInterval = setInterval(pollGameState, 3000);
+}
+
 async function pollGameState() {
   //update game state
   await getGameMoves();
   await getLastMove();
-
-  console.log("mie: " + myCards.length + ", loro: " + theirCardsNum + ", rimanenti: " + deck.length);
 
   if(moves.length > totalMoves){
     totalMoves++;
@@ -212,34 +236,8 @@ $('#card1').on('click', () => executePlayerMove(myCards[0]));
 $('#card2').on('click', () => executePlayerMove(myCards[1]));
 $('#card3').on('click', () => executePlayerMove(myCards[2]));
 
-async function handleFirstPlayer(){
-  await getGameMoves();
-
-  if(moves !== undefined && moves.length >= 4){
-    clearInterval(firstPlayerInterval);
-    movesNumber = 4;
-
-    gameStateInterval = setInterval(pollGameState, 3000);
-  }
-
-}
-
-async function handleSecondPlayer(){
-  for(i = 0; i < 4; i++){
-    let startingCard = deck.shift();
-    board.push(startingCard);
-    await makeMove(startingCard);
-  }
-
-  movesNumber = 4;
-
-  await getGameMoves();
-
-  setInterval(pollGameState, 3000);
-}
-
 function drawCards(){
-  if (playerId % 2 !== 0) {
+  if (playerId === 1) {
     takeNCards(3);
     deck.splice(0, 3);
   } else {
@@ -308,12 +306,27 @@ async function loadPlayerCards(){
   $(`#numScope`).html("Numero scope: " + numScope);
 }
 
-function executePlayerMove(move){
+async function showPlayedCard(move){
+  $(`#playedCard`).html(`<img src="bergamoCards/${move}.png" alt="Card Image"/>`);
+  $(`#playedCard`).show();
+  await delay(2000);
+  $(`#playedCard`).hide();
+}
+
+function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+$('.card').click(function() {
+  $(this).hide();
+});
+
+async function executePlayerMove(move){
+  disableControls();
   makeMove(move);
   myCards = myCards.filter(item => item !== move);
-  disableControls();
 
-  addToBoard(move);
+  await addToBoard(move);
 
   totalMoves++;
 
@@ -322,17 +335,14 @@ function executePlayerMove(move){
   }
 }
 
-$('.card').click(function() {
-  $(this).hide();
-});
-
-function addToBoard(move, isPlayer = true){
+async function addToBoard(move, isPlayer = true){
   let cardValue = move % 10; //valore della mia carta senza segno
 
   if(isPlayer){
     tookLast = true;
   } else {
     tookLast = false;
+    await showPlayedCard(move);
   }
 
   //gestisco caso carta uguale
@@ -402,10 +412,8 @@ function handlesSum(cardValue, move, isPlayer){
   let randomTakeableCards = undefined;
   if(arrayTakeableCards.length === 0){
     return true;
-  } else if(arrayTakeableCards.length === 1){
-    randomTakeableCards = arrayTakeableCards[0].map(x => x - 1);
   } else {
-    randomTakeableCards = arrayTakeableCards[Math.floor(Math.random() * arrayTakeableCards.length)].map(x => x - 1);
+    randomTakeableCards = arrayTakeableCards[0].map(x => x - 1);
   }
 
   for(i = 0; i < randomTakeableCards.length; i++){
