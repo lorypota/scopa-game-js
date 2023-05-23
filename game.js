@@ -306,10 +306,6 @@ $('.card').click(function() {
 
 function addToBoard(move, me = true){
   let valoreMyCard = move % 10; //valore della mia carta senza segno
-  
-  if(me){
-    savedCards.push(move);
-  }
 
   //gestisco caso carta uguale
   let selectedBoardCard = undefined;
@@ -318,6 +314,7 @@ function addToBoard(move, me = true){
     if(valoreCardBoard === valoreMyCard){
       if(board[i] <= 9){ //caso in cui carta sia di ori
         removeAndSaveCard(board[i]);
+        savedCards.push(move);
         return;
       } else {
         selectedBoardCard = board[i];
@@ -327,17 +324,19 @@ function addToBoard(move, me = true){
 
   if(selectedBoardCard !== undefined) {
     removeAndSaveCard(selectedBoardCard);
+    savedCards.push(move);
     return;
   }
 
   //gestisco caso asso
   if(valoreMyCard === 0){
     putsDownAce();
+    savedCards.push(move);
     return;
   }
 
   //gestisco caso somma di carte
-  let notHandled = handlesSum(valoreMyCard);
+  let notHandled = handlesSum(valoreMyCard, move);
 
   //gestisco caso in cui nessuna carta combacia
   if(notHandled){
@@ -356,7 +355,7 @@ function putsDownAce(){
   }
 }
 
-function handlesSum(valoreMyCard){
+function handlesSum(valoreMyCard, move){
   let boardValues = board.map(number => number % 10);
 
   let incrementedArray = boardValues.map(x => x + 1);
@@ -379,6 +378,7 @@ function handlesSum(valoreMyCard){
       }
     }
   }
+  savedCards.push(move);
 }
 
 function sumSubsets(target, numbers, subset = [], index = 0){
@@ -462,6 +462,7 @@ function showResults(){
   
  /*  $(`gamePanel`).hide(); */
 
+ console.log("Carte salvate: " + savedCards.map(x => x + 1).join(", "));
  console.log("Num Carte: " + numCarte) 
  console.log("Num ori: " + numOri)
  console.log("Sette bello: " + setteBello)
