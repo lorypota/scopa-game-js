@@ -313,7 +313,7 @@ function addToBoard(move, me = true){
     let valoreCardBoard = board[i] % 10; //valore della carta in banco senza segno
     if(valoreCardBoard === valoreMyCard){
       if(board[i] <= 9){ //caso in cui carta sia di ori
-        removeAndSaveCard(board[i]);
+        removeAndSaveCard(board[i], me);
         if(me){
           savedCards.push(move);
         }
@@ -325,7 +325,7 @@ function addToBoard(move, me = true){
   }
 
   if(selectedBoardCard !== undefined) {
-    removeAndSaveCard(selectedBoardCard);
+    removeAndSaveCard(selectedBoardCard, me);
     if(me){
       savedCards.push(move);
     }
@@ -334,7 +334,7 @@ function addToBoard(move, me = true){
 
   //gestisco caso asso
   if(valoreMyCard === 0){
-    putsDownAce();
+    putsDownAce(me);
     if(me){
       savedCards.push(move);
     }
@@ -342,7 +342,7 @@ function addToBoard(move, me = true){
   }
 
   //gestisco caso somma di carte
-  let notHandled = handlesSum(valoreMyCard, move);
+  let notHandled = handlesSum(valoreMyCard, move, me);
 
   //gestisco caso in cui nessuna carta combacia
   if(notHandled){
@@ -350,18 +350,23 @@ function addToBoard(move, me = true){
   }
 }
 
-function removeAndSaveCard(boardCard){
-  savedCards.push(boardCard);
+function removeAndSaveCard(boardCard, me){
+  if(me){
+    savedCards.push(boardCard);
+  }
   board = board.filter(item => item !== boardCard);
 }
 
-function putsDownAce(){
+function putsDownAce(me){
   while (board.length) {
-    savedCards.push(board.pop());
+    let cardBoard = board.pop();
+    if(me){
+      savedCards.push(cardBoard);
+    }
   }
 }
 
-function handlesSum(valoreMyCard, move){
+function handlesSum(valoreMyCard, move, me){
   let boardValues = board.map(number => number % 10);
 
   let incrementedArray = boardValues.map(x => x + 1);
@@ -379,13 +384,17 @@ function handlesSum(valoreMyCard, move){
   for(i = 0; i < randomTakeableCards.length; i++){
     for(let j = 0; j < board.length; j++) {
       if(board[j] % 10 === randomTakeableCards[i]){
+        if(me){
+          savedCards.push(board[j]);
+        }
         board.splice(j, 1);
         break;
       }
     }
   }
-  console.log("sono qui");
-  savedCards.push(move);
+  if(me){
+    savedCards.push(move);
+  }
 }
 
 function sumSubsets(target, numbers, subset = [], index = 0){
